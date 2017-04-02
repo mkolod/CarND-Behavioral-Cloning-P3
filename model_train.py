@@ -88,12 +88,13 @@ model = Sequential()
 #model.add(Lambda(lambda x: x/127.5 - 1.,
 #        input_shape=(ch, row, col),
 #        output_shape=(ch, row, col)))
-model.add(Conv2D(32, 5, 5, border_mode='same', input_shape=[row, col, ch]))
+model.add(Conv2D(32, 3, 3, border_mode='same', input_shape=[row, col, ch]))
+model.add(Activation('relu'))
+model.add(Conv2D(32, 3, 3, border_mode='same'))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Conv2D(32, 5, 5, border_mode='same'))
+model.add(Conv2D(32, 3, 3, border_mode='same', input_shape=[row, col, ch]))
 model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Conv2D(32, 3, 3, border_mode='same'))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
@@ -105,6 +106,9 @@ model.add(Dropout(0.5))
 model.add(Dense(256))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
+model.add(Dense(64))
+model.add(Activation('relu'))
+model.add(Dropout(0.5))
 model.add(Dense(1))
 #model = make_parallel(model, 2)
 
@@ -112,6 +116,6 @@ model.compile(loss='mse', optimizer='adam')
 
 model.fit_generator(train_generator, samples_per_epoch= \
             len(train_samples), validation_data=validation_generator, \
-            nb_val_samples=len(validation_samples), nb_epoch=3)
+            nb_val_samples=len(validation_samples), nb_epoch=7)
 
 model.save('model.h5')
