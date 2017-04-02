@@ -5,7 +5,7 @@ import sklearn
 
 from keras.models import Model, Sequential
 from keras.layers import Activation, Flatten, Dense, Dropout, Cropping2D
-from keras.layers import Conv2D, MaxPooling2D, Input, merge
+from keras.layers import Conv2D, MaxPooling2D, Input, Merge
 from keras.layers.core import Lambda
 from keras import backend as K
 
@@ -122,56 +122,47 @@ ch, row, col = 3, 160, 320
 
 # build model
 
-model = Sequential()
+def create_model(num_gpus = 1):
 
-model.add(Lambda(lambda x: x/127.5 - 1.,
-        input_shape=(row, col, ch),
-        output_shape=(row, col, ch)))
 
-model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=[row, col, ch]))
-model.add(Conv2D(16, 3, 3, border_mode='same'))
-model.add(Activation('relu'))
-model.add(Conv2D(32, 3, 3, border_mode='same'))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Conv2D(64, 3, 3, border_mode='same'))
-model.add(Activation('relu'))
-model.add(Conv2D(128, 3, 3, border_mode='same'))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Flatten())
-model.add(Dense(512))
-model.add(Activation('relu'))
-model.add(Dropout(0.5))
-model.add(Dense(256))
-model.add(Activation('relu'))
-model.add(Dropout(0.5))
-model.add(Dense(1))
+    models = []
+    for gpu in range(num_gpus):
+        with tf.device('/gpu:%d' % gpu):
+            model = Sequential()
 
-def slice_batch(x, n_gpus, part):
-    sh = K.shape(x)
-    L = sh[0] / n_gpus
-    if part == n_gpus - 1:
-        return x[part*L:]
-    return x[part*L:(part+1)*L]
+            model.add(Lambda(lambda x: x/127.5 - 1.,
+                    input_shape=(row, col, ch),
+                    output_shape=(row, col, ch)))
 
-def to_multi_gpu(model, n_gpus=2):
-    with tf.device('/cpu:0'):
-        x = Input(model.input_shape[1:], name=model.inputs[0]) #_names[0])
+            model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=[row, col, ch]))
+            model.add(Conv2D(16, 3, 3, border_mode='same'))
+            model.add(Activation('relu'))
+            model.add(Conv2D(32, 3, 3, border_mode='same'))
+            model.add(Activation('relu'))
+            model.add(MaxPooling2D(pool_size=(2, 2)))
+            model.add(Conv2D(64, 3, 3, border_mode='same'))
+            model.add(Activation('relu'))
+            model.add(Conv2D(128, 3, 3, border_mode='same'))
+            model.add(Activation('relu'))
+            model.add(MaxPooling2D(pool_size=(2, 2)))
+            model.add(Flatten())
+            model.add(Dense(512))
+            model.add(Activation('relu'))
+            model.add(Dropout(0.5))
+            model.add(Dense(256))
+            model.add(Activation('relu'))
+            model.add(Dropout(0.5))
+            model.add(Dense(1))
 
-    towers = []
-
-    for g in range(n_gpus):
-        with tf.device('/gpu:' + str(g)):
-            slice_g = Lambda(slice_batch, lambda shape: shape,
-                arguments={'n_gpus':n_gpus, 'part':g})(x)
-            towers.append(model(slice_g))
-
+        models.append(model)   
 
     with tf.device('/cpu:0'):
-        merged = merge(towers, mode='concat', concat_axis=0)
+        parent = Sequential()
+        parent.add(Merge(models, mode='concat', concat_axis=0))
+        parent.compile(loss='mse', optimizer='adam')
 
-    return Model(input=[x], output=merged)
+    return parent
+
 
 #model.add(Flatten(input_shape=[row, col, ch]))
 #model.add(Dense(128))
@@ -179,7 +170,9 @@ def to_multi_gpu(model, n_gpus=2):
 #model.add(Dropout(0.5))
 
 #model = to_multi_gpu(model, n_gpus=2)
-model.compile(loss='mse', optimizer='adam')
+# model.compile(loss='mse', optimizer='adam')
+
+model = create_model(num_gpus = 2)
 
 print(model.summary())
 
