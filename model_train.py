@@ -52,20 +52,25 @@ def generator(samples, batch_size=32):
     num_samples = len(samples)
     while 1: # Loop forever so the generator never terminates
         shuffle(samples)
+
+#        batch_size /= 2
         for offset in range(0, num_samples, batch_size):
             batch_samples = samples[offset:offset+batch_size]
 
             images = []
             angles = []
+
             for batch_sample in batch_samples:
                 name = './data/IMG/'+batch_sample[0].split('/')[-1]
                 center_image = cv2.imread(name)
                 center_angle = float(batch_sample[3])
-                if choice([True, False]):
-                    center_image = np.fliplr(center_image)
-                    center_angle = -center_angle
+#                if choice([True, False]):
+#                    center_image = np.fliplr(center_image)
+#                    center_angle = -center_angle
                 images.append(center_image)
                 angles.append(center_angle)
+                images.append(np.fliplr(center_image))
+                angles.append(-center_angle)
 
             # trim image to only see section with road
             X_train = np.array(images)
@@ -90,12 +95,8 @@ model = Sequential()
 #        output_shape=(ch, row, col)))
 model.add(Conv2D(32, 3, 3, border_mode='same', input_shape=[row, col, ch]))
 model.add(Activation('relu'))
-model.add(Conv2D(32, 3, 3, border_mode='same'))
-model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Conv2D(32, 3, 3, border_mode='same', input_shape=[row, col, ch]))
-model.add(Activation('relu'))
-model.add(Conv2D(32, 3, 3, border_mode='same'))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 # model.add(Flatten(input_shape=[160, 320, 3]))
@@ -106,9 +107,6 @@ model.add(Dropout(0.5))
 model.add(Dense(256))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
-model.add(Dense(64))
-model.add(Activation('relu'))
-model.add(Dropout(0.5))
 model.add(Dense(1))
 #model = make_parallel(model, 2)
 
@@ -116,6 +114,6 @@ model.compile(loss='mse', optimizer='adam')
 
 model.fit_generator(train_generator, samples_per_epoch= \
             len(train_samples), validation_data=validation_generator, \
-            nb_val_samples=len(validation_samples), nb_epoch=7)
+            nb_val_samples=len(validation_samples), nb_epoch=5)
 
 model.save('model.h5')
