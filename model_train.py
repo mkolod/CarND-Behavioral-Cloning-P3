@@ -157,7 +157,7 @@ def slice_batch(x, n_gpus, part):
 
 def to_multi_gpu(model, n_gpus=2):
     with tf.device('/cpu:0'):
-        x = Input(model.input_shape[1:], name=model.input_names[0])
+        x = Input(model.input_shape[1:], name=model.inputs[0]) #_names[0])
 
     towers = []
 
@@ -178,10 +178,12 @@ def to_multi_gpu(model, n_gpus=2):
 #model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
-model = to_multi_gpu(model n_gpus=2)
+#model = to_multi_gpu(model, n_gpus=2)
 model.compile(loss='mse', optimizer='adam')
+
+print(model.summary())
 
 model.fit_generator(train_generator, samples_per_epoch= \
             len(train_samples)*6, validation_data=validation_generator, \
-            nb_val_samples=len(validation_samples), nb_epoch=7)
+            nb_val_samples=len(validation_samples), nb_epoch=5)
 model.save('model.h5')
