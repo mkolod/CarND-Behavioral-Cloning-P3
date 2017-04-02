@@ -4,7 +4,7 @@ import numpy as np
 import sklearn
 
 from keras.models import Sequential
-from keras.layers import Activation, Flatten, Dense, Dropout
+from keras.layers import Activation, Flatten, Dense, Dropout, Cropping2D
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers.core import Lambda
 
@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 # data ingestion
 
 samples = []
-with open('./data/driving_log.csv') as csvfile:
+with open('./sample_data/driving_log.csv') as csvfile:
     reader = csv.reader(csvfile)
     for line in reader:
         samples.append(line)
@@ -61,7 +61,7 @@ def generator(samples, batch_size=32):
             angles = []
 
             for batch_sample in batch_samples:
-                name = './data/IMG/'+batch_sample[0].split('/')[-1]
+                name = './sample_data/IMG/'+batch_sample[0].split('/')[-1]
                 center_image = cv2.imread(name)
                 center_angle = float(batch_sample[3])
 #                if choice([True, False]):
@@ -90,25 +90,32 @@ ch, row, col = 3, 160, 320
 # build model
 
 model = Sequential()
-#model.add(Lambda(lambda x: x/127.5 - 1.,
-#        input_shape=(ch, row, col),
-#        output_shape=(ch, row, col)))
-model.add(Conv2D(32, 3, 3, border_mode='same', input_shape=[row, col, ch]))
+
+model.add(Lambda(lambda x: x/127.5 - 1.,
+        input_shape=(row, col, ch),
+        output_shape=(row, col, ch)))
+
+model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=[row, col, ch]))
+model.add(Conv2D(16, 3, 3, border_mode='same'))
+model.add(Activation('relu'))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(16, 3, 3, border_mode='same'))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Conv2D(32, 3, 3, border_mode='same', input_shape=[row, col, ch]))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-# model.add(Flatten(input_shape=[160, 320, 3]))
-model.add(Flatten())
-model.add(Dense(1024))
-model.add(Activation('relu'))
-model.add(Dropout(0.5))
-model.add(Dense(256))
+#model.add(Flatten())
+#model.add(Dense(1024))
+#model.add(Activation('relu'))
+#model.add(Dropout(0.5))
+#model.add(Dense(256))
+#model.add(Activation('relu'))
+#model.add(Dropout(0.5))
+#model.add(Dense(1))
+
+model.add(Flatten(input_shape=[row, col, ch]))
+model.add(Dense(128))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
 model.add(Dense(1))
-#model = make_parallel(model, 2)
 
 model.compile(loss='mse', optimizer='adam')
 
