@@ -5,7 +5,7 @@ import sklearn
 
 from keras.models import Model, Sequential
 from keras.layers import Activation, Flatten, Dense, Dropout, Cropping2D
-from keras.layers import Conv2D, MaxPooling2D, Input, merge
+from keras.layers import Conv2D, MaxPooling2D, Input, Merge
 from keras.layers.core import Lambda
 from keras import backend as K
 from keras.optimizers import Adam
@@ -172,6 +172,7 @@ model.add(Dense(1))
 #model = to_multi_gpu(model, n_gpus=2)
 adam = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 model.compile(loss='mse', optimizer=adam)
+# model.compile(loss='mse', optimizer='adam')
 
 print(model.summary())
 
