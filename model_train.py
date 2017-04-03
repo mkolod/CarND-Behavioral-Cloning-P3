@@ -63,7 +63,7 @@ def generator(samples, batch_size=32):
             images = []
             angles = []
 
-            angle_offset = 0.10 
+            angle_offset = 0.05 
 
             for batch_sample in batch_samples:
                
@@ -74,11 +74,11 @@ def generator(samples, batch_size=32):
 
                 left_name =  './sample_data/IMG/'+batch_sample[1].split('/')[-1]
                 left_image = cv2.imread(left_name)
-                left_angle = center_angle - angle_offset
+                left_angle = center_angle + angle_offset
 
                 right_name =  './sample_data/IMG/'+batch_sample[2].split('/')[-1]
                 right_image = cv2.imread(right_name)
-                right_angle = center_angle + angle_offset
+                right_angle = center_angle - angle_offset
 
                 images.append(center_image)
                 angles.append(center_angle)
@@ -178,5 +178,5 @@ print(model.summary())
 
 model.fit_generator(train_generator, samples_per_epoch= \
             len(train_samples)*6, validation_data=validation_generator, \
-            nb_val_samples=len(validation_samples), nb_epoch=3)
+            nb_val_samples=len(validation_samples), nb_epoch=1)
 model.save('model.h5')
