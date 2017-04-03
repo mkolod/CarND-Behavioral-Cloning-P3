@@ -8,6 +8,7 @@ from keras.layers import Activation, Flatten, Dense, Dropout, Cropping2D
 from keras.layers import Conv2D, MaxPooling2D, Input, merge
 from keras.layers.core import Lambda
 from keras import backend as K
+from keras.optimizers import Adam
 
 import tensorflow as tf
 
@@ -56,34 +57,29 @@ def generator(samples, batch_size=32):
     while 1: # Loop forever so the generator never terminates
         shuffle(samples)
 
-#        batch_size /= 2
         for offset in range(0, num_samples, batch_size):
             batch_samples = samples[offset:offset+batch_size]
 
             images = []
             angles = []
 
-            angle_offset = 0.08
+            angle_offset = 0.10 
 
             for batch_sample in batch_samples:
                
-#                print(batch_sample[0:3])
 
                 center_name = './sample_data/IMG/'+batch_sample[0].split('/')[-1]
                 center_image = cv2.imread(center_name)
                 center_angle = float(batch_sample[3])
-                
+
                 left_name =  './sample_data/IMG/'+batch_sample[1].split('/')[-1]
                 left_image = cv2.imread(left_name)
-                left_angle = center_angle + angle_offset  
+                left_angle = center_angle - angle_offset
 
                 right_name =  './sample_data/IMG/'+batch_sample[2].split('/')[-1]
                 right_image = cv2.imread(right_name)
-                right_angle = center_angle - angle_offset
+                right_angle = center_angle + angle_offset
 
-#                if choice([True, False]):
-#                    center_image = np.fliplr(center_image)
-#                    center_angle = -center_angle
                 images.append(center_image)
                 angles.append(center_angle)
               
@@ -128,50 +124,45 @@ model.add(Lambda(lambda x: x/127.5 - 1.,
         input_shape=(row, col, ch),
         output_shape=(row, col, ch)))
 
-model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=[row, col, ch]))
-model.add(Conv2D(16, 3, 3, border_mode='same'))
-model.add(Activation('relu'))
-model.add(Conv2D(32, 3, 3, border_mode='same'))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Cropping2D(cropping=((50, 20), (0, 0)), input_shape=[row, col, ch]))
+
 model.add(Conv2D(64, 3, 3, border_mode='same'))
 model.add(Activation('relu'))
+#model.add(Conv2D(64, 3, 3, border_mode='same'))
+#model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
 model.add(Conv2D(128, 3, 3, border_mode='same'))
 model.add(Activation('relu'))
+#model.add(Conv2D(128, 3, 3, border_mode='same'))
+#model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(256, 3, 3, border_mode='same'))
+model.add(Activation('relu'))
+#model.add(Conv2D(256, 3, 3, border_mode='same'))
+#model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+#model.add(Conv2D(512, 3, 3, border_mode='same'))
+#model.add(Activation('relu'))
+#model.add(MaxPooling2D(pool_size=(2, 2)))
+
+# model.add(Conv2D(512, 3, 3, border_mode='same'))
+# model.add(Activation('relu'))
+model.add(Conv2D(512, 3, 3, border_mode='same'))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
 model.add(Flatten())
-model.add(Dense(512))
+# model.add(Dropout(0.5))
+model.add(Dense(128))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
-model.add(Dense(256))
+model.add(Dense(128))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
 model.add(Dense(1))
-
-def slice_batch(x, n_gpus, part):
-    sh = K.shape(x)
-    L = sh[0] / n_gpus
-    if part == n_gpus - 1:
-        return x[part*L:]
-    return x[part*L:(part+1)*L]
-
-def to_multi_gpu(model, n_gpus=2):
-    with tf.device('/cpu:0'):
-        x = Input(model.input_shape[1:], name=model.inputs[0]) #_names[0])
-
-    towers = []
-
-    for g in range(n_gpus):
-        with tf.device('/gpu:' + str(g)):
-            slice_g = Lambda(slice_batch, lambda shape: shape,
-                arguments={'n_gpus':n_gpus, 'part':g})(x)
-            towers.append(model(slice_g))
-
-
-    with tf.device('/cpu:0'):
-        merged = merge(towers, mode='concat', concat_axis=0)
-
-    return Model(input=[x], output=merged)
 
 #model.add(Flatten(input_shape=[row, col, ch]))
 #model.add(Dense(128))
@@ -179,11 +170,12 @@ def to_multi_gpu(model, n_gpus=2):
 #model.add(Dropout(0.5))
 
 #model = to_multi_gpu(model, n_gpus=2)
-model.compile(loss='mse', optimizer='adam')
+adam = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
+model.compile(loss='mse', optimizer=adam)
 
 print(model.summary())
 
 model.fit_generator(train_generator, samples_per_epoch= \
             len(train_samples)*6, validation_data=validation_generator, \
-            nb_val_samples=len(validation_samples), nb_epoch=5)
+            nb_val_samples=len(validation_samples), nb_epoch=3)
 model.save('model.h5')
