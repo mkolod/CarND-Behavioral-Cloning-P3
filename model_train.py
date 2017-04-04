@@ -52,7 +52,7 @@ samples = samples[1:]
 
 train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 
-def random_translation(image, max_pixels=10, angle_shift_per_pixel=0.04):
+def random_translation(image, max_pixels=10, angle_shift_per_pixel=0.005):
     shift = np.random.uniform(-max_pixels, max_pixels)
     rows, cols, _ = np.shape(image)
     trans = cv2.warpAffine(
@@ -62,6 +62,12 @@ def random_translation(image, max_pixels=10, angle_shift_per_pixel=0.04):
     )
     shift = angle_shift_per_pixel * shift
     return trans, shift
+
+def crop(image, top=50, bottom=20, left=10, right=10):
+    return image[top:-bottom, left:-right, :]
+
+def resize(image, new_x=64, new_y=64):
+    return cv2.resize(image, (new_x, new_y))
 
 def generator(samples, batch_size=32):
     num_samples = len(samples)
@@ -74,7 +80,7 @@ def generator(samples, batch_size=32):
             images = []
             angles = []
 
-            angle_offset = 0.20 
+            angle_offset = 0.25 
 
             for batch_sample in batch_samples:
                
@@ -82,20 +88,31 @@ def generator(samples, batch_size=32):
                 center_name = './sample_data/IMG/'+batch_sample[0].split('/')[-1]
                 center_image = cv2.imread(center_name)
                 center_angle = float(batch_sample[3])
-                center_image, angle_shift = random_translation(center_image)
-                center_angle += angle_shift
+#                center_image, angle_shift = random_translation(center_image)
+#                center_angle -= angle_shift
 
                 left_name =  './sample_data/IMG/'+batch_sample[1].split('/')[-1]
                 left_image = cv2.imread(left_name)
                 left_angle = center_angle + angle_offset
-                left_image, angle_shift = random_translation(left_image)
-                left_angle += angle_shift
+#                left_image, angle_shift = random_translation(left_image)
+#                left_angle -= angle_shift
 
                 right_name =  './sample_data/IMG/'+batch_sample[2].split('/')[-1]
                 right_image = cv2.imread(right_name)
                 right_angle = center_angle - angle_offset
-                right_image, angle_shift = random_translation(right_image)
-                right_angle += angle_shift
+#                right_image, angle_shift = random_translation(right_image)
+#                right_angle -= angle_shift
+
+                center_image = crop(center_image)
+                left_image = crop(left_image)
+                right_image = crop(right_image)
+       
+#                print(np.shape(center_image))
+                center_image = resize(center_image)
+#                print(np.shape(center_image)) 
+#                center_image = resize(center_image)
+                left_image = resize(left_image)
+                right_image = resize(right_image)
 
                 images.append(center_image)
                 angles.append(center_angle)
@@ -123,7 +140,7 @@ def generator(samples, batch_size=32):
 train_generator = generator(train_samples, batch_size=16)
 validation_generator = generator(validation_samples, batch_size=16)
 
-ch, row, col = 3, 160, 320
+ch, row, col = 3, 64, 64 #3, 90, 300
 
 # X_train = np.array(images[:4000])
 #y_train = np.array(steering_angles[:4000])
@@ -138,7 +155,7 @@ model.add(Lambda(lambda x: x/127.5 - 1.,
         input_shape=(row, col, ch),
         output_shape=(row, col, ch)))
 
-model.add(Cropping2D(cropping=((50, 20), (10, 10))))
+# model.add(Cropping2D(cropping=((50, 20), (10, 10))))
 
 model.add(Conv2D(64, 3, 3, border_mode='same'))
 model.add(Activation('relu'))
@@ -172,7 +189,7 @@ model.add(Flatten())
 # model.add(Dropout(0.5))
 model.add(Dense(128))
 model.add(Activation('relu'))
-model.add(Dropout(0.75))
+model.add(Dropout(0.5))
 model.add(Dense(128))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
