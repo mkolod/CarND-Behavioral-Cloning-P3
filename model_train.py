@@ -52,6 +52,17 @@ samples = samples[1:]
 
 train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 
+def random_translation(image, max_pixels=10, angle_shift_per_pixel=0.04):
+    shift = np.random.uniform(-max_pixels, max_pixels)
+    rows, cols, _ = np.shape(image)
+    trans = cv2.warpAffine(
+        image,
+        np.float32([[1, 0, shift], [0, 1, 0]]),
+        (cols, rows)
+    )
+    shift = angle_shift_per_pixel * shift
+    return trans, shift
+
 def generator(samples, batch_size=32):
     num_samples = len(samples)
     while 1: # Loop forever so the generator never terminates
@@ -63,7 +74,7 @@ def generator(samples, batch_size=32):
             images = []
             angles = []
 
-            angle_offset = 0.05 
+            angle_offset = 0.20 
 
             for batch_sample in batch_samples:
                
@@ -71,14 +82,20 @@ def generator(samples, batch_size=32):
                 center_name = './sample_data/IMG/'+batch_sample[0].split('/')[-1]
                 center_image = cv2.imread(center_name)
                 center_angle = float(batch_sample[3])
+                center_image, angle_shift = random_translation(center_image)
+                center_angle += angle_shift
 
                 left_name =  './sample_data/IMG/'+batch_sample[1].split('/')[-1]
                 left_image = cv2.imread(left_name)
                 left_angle = center_angle + angle_offset
+                left_image, angle_shift = random_translation(left_image)
+                left_angle += angle_shift
 
                 right_name =  './sample_data/IMG/'+batch_sample[2].split('/')[-1]
                 right_image = cv2.imread(right_name)
                 right_angle = center_angle - angle_offset
+                right_image, angle_shift = random_translation(right_image)
+                right_angle += angle_shift
 
                 images.append(center_image)
                 angles.append(center_angle)
@@ -97,9 +114,6 @@ def generator(samples, batch_size=32):
 
                 images.append(np.fliplr(right_image))
                 angles.append(-right_angle)
-
-#                images.append(np.fliplr(center_image))
-#                angles.append(-center_angle)
 
             # trim image to only see section with road
             X_train = np.array(images)
@@ -124,7 +138,7 @@ model.add(Lambda(lambda x: x/127.5 - 1.,
         input_shape=(row, col, ch),
         output_shape=(row, col, ch)))
 
-model.add(Cropping2D(cropping=((50, 20), (0, 0)), input_shape=[row, col, ch]))
+model.add(Cropping2D(cropping=((50, 20), (10, 10))))
 
 model.add(Conv2D(64, 3, 3, border_mode='same'))
 model.add(Activation('relu'))
@@ -158,7 +172,7 @@ model.add(Flatten())
 # model.add(Dropout(0.5))
 model.add(Dense(128))
 model.add(Activation('relu'))
-model.add(Dropout(0.5))
+model.add(Dropout(0.75))
 model.add(Dense(128))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
@@ -178,5 +192,5 @@ print(model.summary())
 
 model.fit_generator(train_generator, samples_per_epoch= \
             len(train_samples)*6, validation_data=validation_generator, \
-            nb_val_samples=len(validation_samples), nb_epoch=1)
+            nb_val_samples=len(validation_samples), nb_epoch=5)
 model.save('model.h5')
