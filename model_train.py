@@ -103,16 +103,16 @@ def generator(samples, batch_size=32):
 #                right_image, angle_shift = random_translation(right_image)
 #                right_angle -= angle_shift
 
-                center_image = crop(center_image)
-                left_image = crop(left_image)
-                right_image = crop(right_image)
+#                center_image = crop(center_image)
+#                left_image = crop(left_image)
+#                right_image = crop(right_image)
        
 #                print(np.shape(center_image))
-                center_image = resize(center_image)
+#                center_image = resize(center_image)
 #                print(np.shape(center_image)) 
 #                center_image = resize(center_image)
-                left_image = resize(left_image)
-                right_image = resize(right_image)
+#                left_image = resize(left_image)
+#                right_image = resize(right_image)
 
                 images.append(center_image)
                 angles.append(center_angle)
@@ -140,7 +140,7 @@ def generator(samples, batch_size=32):
 train_generator = generator(train_samples, batch_size=16)
 validation_generator = generator(validation_samples, batch_size=16)
 
-ch, row, col = 3, 64, 64 #3, 90, 300
+ch, row, col = 3, 160, 300 #3, 90, 300
 
 # X_train = np.array(images[:4000])
 #y_train = np.array(steering_angles[:4000])
@@ -154,6 +154,9 @@ model = Sequential()
 model.add(Lambda(lambda x: x/127.5 - 1.,
         input_shape=(row, col, ch),
         output_shape=(row, col, ch)))
+
+model.add(Lambda(lambda x: crop(x)))
+model.add(Lambda(lambda x: resize(x)))
 
 # model.add(Cropping2D(cropping=((50, 20), (10, 10))))
 
