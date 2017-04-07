@@ -93,8 +93,8 @@ def generator(samples, batch_size=32):
                 center_image = cv2.imread(center_name)
                 center_angle = float(batch_sample[3])
  
-                if is_flip():
-                    center_image, center_angle = flip(center_image, center_angle)
+#                if is_flip():
+#                    center_image, center_angle = flip(center_image, center_angle)
          
 #                center_image, angle_shift = random_translation(center_image)
 #                center_angle -= angle_shift
@@ -105,8 +105,8 @@ def generator(samples, batch_size=32):
 #                left_image, angle_shift = random_translation(left_image)
 #                left_angle -= angle_shift
 
-                if is_flip():
-                    left_image, left_angle = flip(left_image, left_angle)
+#                if is_flip():
+#                    left_image, left_angle = flip(left_image, left_angle)
 
                 right_name =  root_path + 'IMG/'+batch_sample[2].split('/')[-1]
                 right_image = cv2.imread(right_name)
@@ -114,8 +114,8 @@ def generator(samples, batch_size=32):
 #                right_image, angle_shift = random_translation(right_image)
 #                right_angle -= angle_shift
 
-                if is_flip():
-                    right_image, right_angle = flip(right_image, right_angle)
+#                if is_flip():
+#                    right_image, right_angle = flip(right_image, right_angle)
 
 #                center_image = crop(center_image)
 #                left_image = crop(left_image)
@@ -128,20 +128,20 @@ def generator(samples, batch_size=32):
                 images.append(center_image)
                 angles.append(center_angle)
               
-#                images.append(np.fliplr(center_image))
-#                angles.append(-center_angle)
+                images.append(np.fliplr(center_image))
+                angles.append(-center_angle)
                    
                 images.append(left_image)
                 angles.append(left_angle)
 
-#                images.append(np.fliplr(left_image))
-#                angles.append(-left_angle)
+                images.append(np.fliplr(left_image))
+                angles.append(-left_angle)
                 
                 images.append(right_image)
                 angles.append(right_angle)
 
-#                images.append(np.fliplr(right_image))
-#                angles.append(-right_angle)
+                images.append(np.fliplr(right_image))
+                angles.append(-right_angle)
 
             # trim image to only see section with road
             X_train = np.array(images)
@@ -223,6 +223,7 @@ model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsam
 model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1)))
 model.add(Flatten())
 model.add(Dense(1164, activation='relu'))
+model.add(Dropout(0.5))
 model.add(Dense(100, activation='relu'))
 model.add(Dense(50, activation='relu'))
 model.add(Dense(10, activation='relu'))
@@ -237,6 +238,6 @@ model.compile(loss='mse', optimizer=opt)
 print(model.summary())
 
 model.fit_generator(train_generator, samples_per_epoch= \
-            len(train_samples)*3, validation_data=validation_generator, \
+            len(train_samples)*6, validation_data=validation_generator, \
             nb_val_samples=len(validation_samples), nb_epoch=3)
 model.save('model.h5')
