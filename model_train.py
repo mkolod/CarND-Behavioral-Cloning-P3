@@ -1,6 +1,7 @@
 import csv
 import cv2
 import numpy as np
+import os
 import sklearn
 
 from keras.models import Model, Sequential
@@ -9,12 +10,11 @@ from keras.layers import Conv2D, MaxPooling2D, Input, Merge
 from keras.layers.core import Lambda
 from keras import backend as K
 from keras.optimizers import Adagrad, Adam
-
-from common import crop, resize
+from keras.layers.convolutional import Convolution2D
 
 import tensorflow as tf
 
-from random import choice, shuffle
+from random import shuffle
 
 from sklearn.model_selection import train_test_split
 
@@ -28,50 +28,18 @@ with open(root_path + 'driving_log.csv') as csvfile:
     for line in reader:
         samples.append(line)
 
-# Remove the labels
+# Remove the labels from the CSV file
 samples = samples[1:]
 
-#lines = []
-
-#with open('./data/driving_log.csv') as csvfile:
-#    reader = csv.reader(csvfile)
-#    for line in reader:
-#        lines.append(line)
-
-#lines = lines[1:]
-
-#images = []
-#steering_angles = []
-
-#for line in lines:
-#    # center image
-#    source_path = line[0]
-#    # extract file name and add it to another path
-#    filename = source_path.split('/')[-1]
-#    current_path = './data/IMG/' + filename
-#    image = cv2.imread(current_path)
-#    images.append(image)
-#    steering_angle = float(line[3])
-#    steering_angles.append(steering_angle)
-
+# 80% training, 20% validation (not test in this case)
 train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 
-def random_translation(image, max_pixels=10, angle_shift_per_pixel=0.004):
-    shift = np.random.uniform(-max_pixels, max_pixels)
-    rows, cols, _ = np.shape(image)
-    trans = cv2.warpAffine(
-        image,
-        np.float32([[1, 0, shift], [0, 1, 0]]),
-        (cols, rows)
-    )
-    shift = angle_shift_per_pixel * shift
-    return trans, shift
-
-def is_flip():
-    return np.random.choice([True, False])
-
-def flip(image, angle):
-    return np.fliplr(image), -angle    
+# I recorded several times in different directories so as not to mess
+# up any given dataset, and the concatenated log file reflected that.
+# For the final merger of datasets, ignore the absolute paths
+# from the various partial datasets.
+def normalize_path(path):
+    return root_path + "/IMG/" + os.path.basename(path)
 
 def generator(samples, batch_size=32):
     num_samples = len(samples)
@@ -84,142 +52,61 @@ def generator(samples, batch_size=32):
             images = []
             angles = []
 
+            # offset for left and right images to simulate a balanced
+            # rather than just learn center driving.
             angle_offset = 0.20 
 
             for batch_sample in batch_samples:
-               
 
-                center_name = root_path + 'IMG/'+batch_sample[0].split('/')[-1]
-                center_image = cv2.imread(center_name)
-                center_angle = float(batch_sample[3])
- 
-#                if is_flip():
-#                    center_image, center_angle = flip(center_image, center_angle)
-         
-#                center_image, angle_shift = random_translation(center_image)
-#                center_angle -= angle_shift
+                # unpack the row
+                center_file, left_file, right_file, center_angle, *rest = tuple(batch_sample)
 
-                left_name =  root_path + 'IMG/'+batch_sample[1].split('/')[-1]
-                left_image = cv2.imread(left_name)
-                left_angle = center_angle + angle_offset
-#                left_image, angle_shift = random_translation(left_image)
-#                left_angle -= angle_shift
+                # it's a CSV file so let's cast the string representation
+                # of a float to an actual float
+                center_angle = float(center_angle)
 
-#                if is_flip():
-#                    left_image, left_angle = flip(left_image, left_angle)
+                # load all the images
+                new_images = [cv2.imread(normalize_path(x)) for x in [center_file, left_file, right_file]]
 
-                right_name =  root_path + 'IMG/'+batch_sample[2].split('/')[-1]
-                right_image = cv2.imread(right_name)
-                right_angle = center_angle - angle_offset
-#                right_image, angle_shift = random_translation(right_image)
-#                right_angle -= angle_shift
+                # take center angles and compute
+                # synthetic left/right angles
+                new_angles = [center_angle, center_angle + angle_offset, center_angle - angle_offset]
+      
+                # generate flipped images and angles
+                flipped_images = [np.fliplr(y) for y in new_images]
+                flipped_angles = [-z for z in new_angles]
 
-#                if is_flip():
-#                    right_image, right_angle = flip(right_image, right_angle)
+                # add images to the batch
+                images.extend(new_images)
+                images.extend(flipped_images)
+                 
+                # add angles to the batch
+                angles.extend(new_angles)
+                angles.extend(flipped_angles)
 
-#                center_image = crop(center_image)
-#                left_image = crop(left_image)
-#                right_image = crop(right_image)
-       
-#                center_image = resize(center_image)
-#                left_image = resize(left_image)
-#                right_image = resize(right_image)
-
-                images.append(center_image)
-                angles.append(center_angle)
-              
-                images.append(np.fliplr(center_image))
-                angles.append(-center_angle)
-                   
-                images.append(left_image)
-                angles.append(left_angle)
-
-                images.append(np.fliplr(left_image))
-                angles.append(-left_angle)
-                
-                images.append(right_image)
-                angles.append(right_angle)
-
-                images.append(np.fliplr(right_image))
-                angles.append(-right_angle)
-
-            # trim image to only see section with road
+            # convert lists to NumPy arrays
             X_train = np.array(images)
             y_train = np.array(angles)
             yield sklearn.utils.shuffle(X_train, y_train)
 
+# use batch size of 16 for both training and validation
 train_generator = generator(train_samples, batch_size=16)
 validation_generator = generator(validation_samples, batch_size=16)
 
-ch, row, col = 3, 160, 320 # 160, 320 #3, 90, 300
+# original image dimensions
+ch, row, col = 3, 160, 320 
 
-# X_train = np.array(images[:4000])
-#y_train = np.array(steering_angles[:4000])
+# NVIDIA model - see here: https://arxiv.org/pdf/1604.07316v1.pdf
 
-# NOTE: save model in h5 format or dump NumPy arrays
-
-# build model
-
-#model = Sequential()
-
-#model.add(Lambda(lambda x: x/127.5 - 1.,
-#        input_shape=(row, col, ch),
-#        output_shape=(row, col, ch)))
-
-# model.add(Cropping2D(cropping=((50, 20), (10, 10))))
-
-#model.add(Conv2D(32, 3, 3, border_mode='same'))
-#model.add(Activation('relu'))
-#model.add(Conv2D(32, 3, 3, border_mode='same'))
-#model.add(Activation('relu'))
-#model.add(MaxPooling2D(pool_size=(2, 2)))
-
-#model.add(Conv2D(64, 3, 3, border_mode='same'))
-#model.add(Activation('relu'))
-#model.add(Conv2D(64, 3, 3, border_mode='same'))
-#model.add(Activation('relu'))
-#model.add(MaxPooling2D(pool_size=(2, 2)))
-
-#model.add(Conv2D(128, 3, 3, border_mode='same'))
-#model.add(Activation('relu'))
-#model.add(Conv2D(128, 3, 3, border_mode='same'))
-#model.add(Activation('relu'))
-#model.add(MaxPooling2D(pool_size=(2, 2)))
-
-#model.add(Conv2D(512, 3, 3, border_mode='same'))
-#model.add(Activation('relu'))
-#model.add(MaxPooling2D(pool_size=(2, 2)))
-
-#model.add(Conv2D(256, 3, 3, border_mode='same'))
-#model.add(Activation('relu'))
-#model.add(Conv2D(256, 3, 3, border_mode='same'))
-#model.add(Activation('relu'))
-#model.add(MaxPooling2D(pool_size=(2, 2)))
-
-#model.add(Flatten())
-# model.add(Dropout(0.5))
-#model.add(Dense(128))
-#model.add(Activation('relu'))
-#model.add(Dropout(0.5))
-#model.add(Dense(128))
-#model.add(Activation('relu'))
-#model.add(Dropout(0.5))
-#model.add(Dense(1))
-
-#model.add(Flatten(input_shape=[row, col, ch]))
-#model.add(Dense(128))
-#model.add(Activation('relu'))
-#model.add(Dropout(0.5))
-
-from keras.layers.convolutional import Convolution2D
-
+# This is a nicer API than the one we user in the course.
+# This convolution layer already includes activation and subsampling
 model = Sequential()
 model.add(Lambda(lambda x: x / 255.0 - 0.5, input_shape=(160, 320, 3)))
 model.add(Cropping2D(cropping=((70, 25), (0, 0))))
 model.add(Convolution2D(24, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
 model.add(Convolution2D(36, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
 model.add(Convolution2D(48, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
-model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1)))
+model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1))) 
 model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1)))
 model.add(Flatten())
 model.add(Dense(1164, activation='relu'))
@@ -229,15 +116,18 @@ model.add(Dense(50, activation='relu'))
 model.add(Dense(10, activation='relu'))
 model.add(Dense(1, activation='tanh'))
 
-#model = to_multi_gpu(model, n_gpus=2)
-# opt = Adagrad(lr=0.001)
+# Use Adam with standard hyperparameters, but expose them 
+# so they can be tweaked if need be.
 opt = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=1e-4)
 model.compile(loss='mse', optimizer=opt)
-# model.compile(loss='mse', optimizer='adam')
 
+# Print the layers and their dimensions.
 print(model.summary())
 
+# We multiply the number of training samples by 6 to account for 
+# center, left and right images, and their flipped counterparts.
 model.fit_generator(train_generator, samples_per_epoch= \
             len(train_samples)*6, validation_data=validation_generator, \
-            nb_val_samples=len(validation_samples), nb_epoch=3)
+            nb_val_samples=len(validation_samples), nb_epoch=5)
+
 model.save('model.h5')
