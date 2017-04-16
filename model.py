@@ -122,25 +122,19 @@ model.add(Lambda(lambda x: x/127.5 - 1.,
         output_shape=(row, col, ch)))
 
 model.add(Cropping2D(cropping=((67, 25), (0, 0))))
-
 model.add(Conv2D(24, 5, 5, border_mode='valid'))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
-
 model.add(Conv2D(36, 5, 5, border_mode='valid'))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
-
 model.add(Conv2D(48, 5, 5, border_mode='valid'))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
-
 model.add(Conv2D(64, 3, 3, border_mode='valid'))
 model.add(Activation('relu'))
-
 model.add(Conv2D(64, 3, 3, border_mode='valid'))
 model.add(Activation('relu'))
-
 model.add(Flatten())
 model.add(Dense(1164))
 model.add(Activation('relu'))
