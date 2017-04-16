@@ -155,26 +155,9 @@ model.add(Dense(1))
 model.add(Activation('tanh'))
 
 
-#model = Sequential()
-#model.add(Lambda(lambda x: x / 255.0 - 0.5, input_shape=(160, 320, 3)))
-#model.add(Cropping2D(cropping=((70, 25), (0, 0))))
-#model.add(Convolution2D(24, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
-#model.add(Convolution2D(36, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
-#model.add(Convolution2D(48, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
-#model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1))) 
-#model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1)))
-#model.add(Flatten())
-#model.add(Dense(1164, activation='relu'))
-#model.add(Dropout(0.5))
-#model.add(Dense(100, activation='relu'))
-#model.add(Dense(50, activation='relu'))
-#model.add(Dense(10, activation='relu'))
-#model.add(Dense(1, activation='tanh'))
-
 # Use Adam with standard hyperparameters, but expose them 
 # so they can be tweaked if need be.
-opt = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=1e-4)
-model.compile(loss='mse', optimizer=opt)
+model.compile(loss='mse', optimizer='adam')
 
 # Print the layers and their dimensions.
 print(model.summary())
@@ -183,6 +166,6 @@ print(model.summary())
 # center, left and right images, and their flipped counterparts.
 model.fit_generator(train_generator, samples_per_epoch= \
             len(train_samples)*6, validation_data=validation_generator, \
-            nb_val_samples=len(validation_samples), nb_epoch=5)
+            nb_val_samples=len(validation_samples), nb_epoch=3)
 
 model.save('model.h5')
