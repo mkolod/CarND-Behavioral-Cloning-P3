@@ -113,21 +113,63 @@ ch, row, col = 3, 160, 320
 # NVIDIA model - see here: https://arxiv.org/pdf/1604.07316v1.pdf
 # This is a nicer API than the one we used in the course.
 # This Convolution2D layer already includes activation and subsampling parameters.
+
+
 model = Sequential()
-model.add(Lambda(lambda x: x / 255.0 - 0.5, input_shape=(160, 320, 3)))
-model.add(Cropping2D(cropping=((70, 25), (0, 0))))
-model.add(Convolution2D(24, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
-model.add(Convolution2D(36, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
-model.add(Convolution2D(48, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
-model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1))) 
-model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1)))
+
+model.add(Lambda(lambda x: x/127.5 - 1.,
+        input_shape=(row, col, ch),
+        output_shape=(row, col, ch)))
+
+model.add(Cropping2D(cropping=((67, 25), (0, 0))))
+
+model.add(Conv2D(24, 5, 5, border_mode='valid'))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(36, 5, 5, border_mode='valid'))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(48, 5, 5, border_mode='valid'))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(64, 3, 3, border_mode='valid'))
+model.add(Activation('relu'))
+
+model.add(Conv2D(64, 3, 3, border_mode='valid'))
+model.add(Activation('relu'))
+
 model.add(Flatten())
-model.add(Dense(1164, activation='relu'))
+model.add(Dense(1164))
+model.add(Activation('relu'))
 model.add(Dropout(0.5))
-model.add(Dense(100, activation='relu'))
-model.add(Dense(50, activation='relu'))
-model.add(Dense(10, activation='relu'))
-model.add(Dense(1, activation='tanh'))
+model.add(Dense(100))
+model.add(Activation('relu'))
+model.add(Dense(50))
+model.add(Activation('relu'))
+model.add(Dense(10))
+model.add(Activation('relu'))
+model.add(Dense(1))
+model.add(Activation('tanh'))
+
+
+#model = Sequential()
+#model.add(Lambda(lambda x: x / 255.0 - 0.5, input_shape=(160, 320, 3)))
+#model.add(Cropping2D(cropping=((70, 25), (0, 0))))
+#model.add(Convolution2D(24, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
+#model.add(Convolution2D(36, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
+#model.add(Convolution2D(48, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
+#model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1))) 
+#model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1)))
+#model.add(Flatten())
+#model.add(Dense(1164, activation='relu'))
+#model.add(Dropout(0.5))
+#model.add(Dense(100, activation='relu'))
+#model.add(Dense(50, activation='relu'))
+#model.add(Dense(10, activation='relu'))
+#model.add(Dense(1, activation='tanh'))
 
 # Use Adam with standard hyperparameters, but expose them 
 # so they can be tweaked if need be.
