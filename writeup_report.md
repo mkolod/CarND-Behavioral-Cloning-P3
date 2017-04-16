@@ -69,30 +69,30 @@ My model consists of a convolutional neural network with the following architect
 | Lambda  | 160 x 320 x 3   | 0  | lambda x: x/127.5 - 1. |
 | Cropping 2D   | 68 x 320 x 3  | 0  | top=67, bottom=25, left=0, right=0 |
 | Convolution 2D   | 64 x 316 x 24  | 1,824  | 24 5x5 filters, valid padding |
-| ReLU Activation  | 64 x 316 x 24  | 0  | N/A |
+| ReLU Activation  | 64 x 316 x 24  | 0  |  |
 | Max Pooling   | 32 x 158 x 24  | 0 | 2x2 |
 | Convolution 2D  | 28 x 154 x 36  | 21,636  | 36 5x5 filters, valid padding |
-| ReLU Activation  | 28 x 154 x 36  | 0  | N/A |
+| ReLU Activation  | 28 x 154 x 36  | 0  |  |
 | Max Pooling  | 14 x 77 x 36  | 0  | 2x2 |
 | Convolution 2D  | 10 x 73 x 48  | 43,248  | 48 5x5 filters, valid padding |
-| ReLU Activation  | 10 x 73 x 48  | 0 | N/A |
+| ReLU Activation  | 10 x 73 x 48  | 0 |  |
 | Max Pooling  | 5 x 36 x 48  | 0  | 2x2 |
 | Convolution 2D  | 3 x 34 x 64   | 27,712  | 64 3x3 filters, valid padding |
-| ReLU Activation  | 3 x 34 x 64  | 0  | N/A |
+| ReLU Activation  | 3 x 34 x 64  | 0  |  |
 | Convolution 2D  | 1 x 32 x 64  | 36,928  | 64 3x3 filters, valid padding |
-| ReLU Activation  | 1 x 32 x 64  | 0 | N/A |
-| Flatten  | 2,048  | 0  | N/A |
-| Dense  | 1,164  | 2,385,036  | N/A |
-| ReLU Activation  | 1,164  | 0  | N/A |
+| ReLU Activation  | 1 x 32 x 64  | 0 |  |
+| Flatten  | 2,048  | 0  |  |
+| Dense  | 1,164  | 2,385,036  |  |
+| ReLU Activation  | 1,164  | 0  |  |
 | Dropout  | 1,164  | 0  | 0.5 |
-| Dense  | 100  | 116,500  | N/A |
-| ReLU Activation  | 100  | 0  | N/A |
-| Dense  | 50  | 5,050  | N/A |
-| ReLU Activation  | 50  | 0  | N/A |
-|  Dense | 10  |  510 | N/A |
-| ReLU Activation  | 10  | 0  | N/A |
-| Dense  | 1 |  11 | N/A |
-| Tanh Activation  | 1  | 0  | N/A |
+| Dense  | 100  | 116,500  |  |
+| ReLU Activation  | 100  | 0  |  |
+| Dense  | 50  | 5,050  |  |
+| ReLU Activation  | 50  | 0  |  |
+|  Dense | 10  |  510 |  |
+| ReLU Activation  | 10  | 0  |  |
+| Dense  | 1 |  11 |  |
+| Tanh Activation  | 1  | 0  |  |
 
 The data is first normalized to prevent a wide input range, which would make the model harder to train. This is accomplished using a lambda layer.
 
