@@ -62,47 +62,42 @@ The [model.py](https://github.com/mkolod/CarND-Behavioral-Cloning-P3/blob/master
 
 ####1. An appropriate model architecture has been employed
 
-My model consists of a convolution neural network with 3x3 filter sizes and depths between 32 and 128 (model.py lines 18-24) 
-
-The model includes RELU layers to introduce nonlinearity (code line 20), and the data is normalized in the model using a Keras lambda layer (code line 18). 
-
-**Note: mention activations and subsampling**
-
-model = Sequential()
-model.add(Lambda(lambda x: x / 255.0 - 0.5, input_shape=(160, 320, 3)))
-model.add(Cropping2D(cropping=((70, 25), (0, 0))))
-model.add(Convolution2D(24, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
-model.add(Convolution2D(36, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
-model.add(Convolution2D(48, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
-model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1)))
-model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1)))
-model.add(Flatten())
-model.add(Dense(1164, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(100, activation='relu'))
-model.add(Dense(50, activation='relu'))
-model.add(Dense(10, activation='relu'))
-model.add(Dense(1, activation='tanh'))
-
+My model consists of a convolutional neural network with the following architecture (model.py code lines 118-155). This is a verbatim implementation of the NVIDIA model (see [paper](https://arxiv.org/pdf/1604.07316v1.pdf)), although the input dimensions are a bit different here, so the outputs of the particular layers are different than in the NVIDIA paper. However, the size and number of convolutional filters, the number of layers, the types of layers and the dense/fully connected/affine layer dimensions are the same. The only thing I took care to add was the dropout layer after the first fully connected layer, which contains most (2,385,036 out of 2,638,455, or ~90.4%) of the parameters of the model. See more on that below.
 
 | Layer  | Output Shape  | Number of Parameters   | Value
 |---|---|---| --- |
-| Lambda  | (160, 320, 3)   | 0  | |
-| Cropping 2D   | (65, 320, 3)  | 0  | |
-| Convolution 2D   | (31, 158, 24)  | 1,824  | |
-| Convolution 2D  | (14, 77, 36)  | 21,636  | |
-| Convolution 2D  | (5, 37, 48)  | 43,248  | |
-| Convolution 2D  | (3, 35, 64)  | 27,712  | |
-| Convolution 2D  | (1, 33, 64)  | 36,928  | |
-| Flatten  | (2,112)  | 0  | |
-| Dense  | 1,164  | 2,459,532  | |
+| Lambda  | 160 x 320 x 3   | 0  | lambda x: x/127.5 - 1. |
+| Cropping 2D   | 68 x 320 x 3  | 0  | top=67, bottom=25, left=0, right=0 |
+| Convolution 2D   | 64 x 316 x 24  | 1,824  | 24 5x5 filters, valid padding |
+| ReLU Activation  | 64 x 316 x 24  | 0  | N/A |
+| Max Pooling   | 32 x 158 x 24  | 0 | 2x2 |
+| Convolution 2D  | 28 x 154 x 36  | 21,636  | 36 5x5 filters, valid padding |
+| ReLU Activation  | 28 x 154 x 36  | 0  | N/A |
+| Max Pooling  | 14 x 77 x 36  | 0  | 2x2 |
+| Convolution 2D  | 10 x 73 x 48  | 43,248  | 48 5x5 filters, valid padding |
+| ReLU Activation  | 10 x 73 x 48  | 0 | N/A |
+| Max Pooling  | 5 x 36 x 48  | 0  | 2x2 |
+| Convolution 2D  | 3 x 34 x 64   | 27,712  | 64 3x3 filters, valid padding |
+| ReLU Activation  | 3 x 34 x 64  | 0  | N/A |
+| Convolution 2D  | 1 x 32 x 64  | 36,928  | 64 3x3 filters, valid padding |
+| ReLU Activation  | 1 x 32 x 64  | 0 | N/A |
+| Flatten  | 2,048  | 0  | N/A |
+| Dense  | 1,164  | 2,385,036  | N/A |
+| ReLU Activation  | 1,164  | 0  | N/A |
 | Dropout  | 1,164  | 0  | 0.5 |
-| Dense  | 100  | 116,500  | |
-| Dense  | 50  | 5,050  | |
-|  Dense | 10  |  510 | |
-| Dense  | 1 |  11 | |
-|   |   |   | |
-|   |   |   | |
+| Dense  | 100  | 116,500  | N/A |
+| ReLU Activation  | 100  | 0  | N/A |
+| Dense  | 50  | 5,050  | N/A |
+| ReLU Activation  | 50  | 0  | N/A |
+|  Dense | 10  |  510 | N/A |
+| ReLU Activation  | 10  | 0  | N/A |
+| Dense  | 1 |  11 | N/A |
+| Tanh Activation  | 1  | 0  | N/A |
+
+The data is first normalized to prevent a wide input range, which would make the model harder to train. This is accomplished using a lambda layer.
+
+
+
 
 ####2. Attempts to reduce overfitting in the model
 
@@ -173,7 +168,4 @@ After the collection process, I had X number of data points. I then preprocessed
 I finally randomly shuffled the data set and put Y% of the data into a validation set. 
 
 I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs was Z as evidenced by ... I used an adam optimizer so that manually training the learning rate wasn't necessary.
-
-
-
 
