@@ -16,8 +16,8 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[center1]: ./exampled/center1.jpg
-[flipped1]: ./exampled/flipped1.jpg
+[center1]: ./examples/center1.jpg
+[flipped1]: ./examples/flipped1.jpg
 [left1]: ./examples/left1.jpg
 [right1]: ./examples/right1.jpg
 [cropped1]: ./examples/cropped1.jpg
