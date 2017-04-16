@@ -66,6 +66,44 @@ My model consists of a convolution neural network with 3x3 filter sizes and dept
 
 The model includes RELU layers to introduce nonlinearity (code line 20), and the data is normalized in the model using a Keras lambda layer (code line 18). 
 
+**Note: mention activations and subsampling**
+
+model = Sequential()
+model.add(Lambda(lambda x: x / 255.0 - 0.5, input_shape=(160, 320, 3)))
+model.add(Cropping2D(cropping=((70, 25), (0, 0))))
+model.add(Convolution2D(24, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
+model.add(Convolution2D(36, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
+model.add(Convolution2D(48, 5, 5, border_mode='valid', activation='relu', subsample=(2, 2)))
+model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1)))
+model.add(Convolution2D(64, 3, 3, border_mode='valid', activation='relu', subsample=(1, 1)))
+model.add(Flatten())
+model.add(Dense(1164, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation='relu'))
+model.add(Dense(50, activation='relu'))
+model.add(Dense(10, activation='relu'))
+model.add(Dense(1, activation='tanh'))
+
+
+| Layer  | Output Shape  | Number of Parameters   | Value
+|---|---|---| --- |
+| Lambda  | (160, 320, 3)   | 0  | |
+| Cropping 2D   | (65, 320, 3)  | 0  | |
+| Convolution 2D   | (31, 158, 24)  | 1,824  | |
+| Convolution 2D  | (14, 77, 36)  | 21,636  | |
+| Convolution 2D  | (5, 37, 48)  | 43,248  | |
+| Convolution 2D  | (3, 35, 64)  | 27,712  | |
+| Convolution 2D  | (1, 33, 64)  | 36,928  | |
+| Flatten  | (2,112)  | 0  | |
+| Dense  | 1,164  | 2,459,532  | |
+| Dropout  | 1,164  | 0  | 0.5 |
+| Dense  | 100  | 116,500  | |
+| Dense  | 50  | 5,050  | |
+|  Dense | 10  |  510 | |
+| Dense  | 1 |  11 | |
+|   |   |   | |
+|   |   |   | |
+
 ####2. Attempts to reduce overfitting in the model
 
 The model contains dropout layers in order to reduce overfitting (model.py lines 21). 
@@ -135,3 +173,7 @@ After the collection process, I had X number of data points. I then preprocessed
 I finally randomly shuffled the data set and put Y% of the data into a validation set. 
 
 I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs was Z as evidenced by ... I used an adam optimizer so that manually training the learning rate wasn't necessary.
+
+
+
+
