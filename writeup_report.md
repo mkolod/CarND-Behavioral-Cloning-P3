@@ -33,20 +33,30 @@ The goals / steps of this project are the following:
 ####1. Submission includes all required files and can be used to run the simulator in autonomous mode
 
 My project includes the following files:
-* model.py containing the script to create and train the model
-* drive.py for driving the car in autonomous mode
-* model.h5 containing a trained convolution neural network 
-* writeup_report.md (this file) summarizing the results
+* [model.py](https://github.com/mkolod/CarND-Behavioral-Cloning-P3/blob/master/model.py) containing the script to create and train the model
+* [drive.py](https://github.com/mkolod/CarND-Behavioral-Cloning-P3/blob/master/drive.py) for driving the car in autonomous mode
+* [model.h5](https://github.com/mkolod/CarND-Behavioral-Cloning-P3/blob/master/model.h5) containing a trained convolution neural network 
+* [writeup_report.md](https://github.com/mkolod/CarND-Behavioral-Cloning-P3/blob/master/writeup_report.md) (this file) summarizing the results
 
 ####2. Submission includes functional code
-Using the Udacity provided simulator and my drive.py file, the car can be driven autonomously around the track by executing 
+Using the Udacity provided simulator and my [drive.py](https://github.com/mkolod/CarND-Behavioral-Cloning-P3/blob/master/drive.py) file, the car can be driven autonomously around the track by executing 
+
 ```sh
 python drive.py model.h5
 ```
+Note that when running Keras and TensorFlow inside a Docker container, we must expose port 4567 to the host, where the Udacity simulator is running. Also when running with GPU acceleration, we should first install the [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) plugin and start the container using `nvidia-docker` rather than `docker`. 
+
+```sh
+nvidia-docker run --rm -it -v `pwd`:/src -p 8888:8888 -p 4567:4567 udacity/carnd-term1-starter-kit /bin/bash
+```
+
+Once in the container, we can call the `drive.py` script as above. When running on bare metal, we can just call the script directly, as mentioned above.
+
+We then need to start the Udacity simulator in autonomous mode. The simulator will then communicate with the Keras model, which will take image inputs and provide steering angles to the simulator.
 
 ####3. Submission code is usable and readable
 
-The model.py file contains the code for training and saving the convolution neural network. The file shows the pipeline I used for training and validating the model, and it contains comments to explain how the code works.
+The [model.py](https://github.com/mkolod/CarND-Behavioral-Cloning-P3/blob/master/model.py) file contains the code for training and saving the convolutional neural network. The file shows the pipeline I used for training and validating the model, and it contains comments to explain how the code works.
 
 ###Model Architecture and Training Strategy
 
